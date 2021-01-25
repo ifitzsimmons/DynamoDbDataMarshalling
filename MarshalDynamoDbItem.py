@@ -1,4 +1,3 @@
-import json
 from typing import List, Optional
 
 
@@ -115,29 +114,27 @@ class MarshalItem:
 
         marshalled_item = {}
 
-        if type(ddb_item) in [str, int, float, bool]:
+        try:
+            for key, value in ddb_item.items():
+                marshalled_type = self.DDB_PRIMITIVES_MAP[type(value)]
+
+                if marshalled_type == 'L':
+                    marshalled_item[key] = {marshalled_type: []}
+                    for list_item in value:
+                        marshalled_item[key][marshalled_type].append(self.__marshal_object(list_item))
+                elif marshalled_type == 'M':
+                    # recursively marshal dicionary
+                    marshalled_item[key] = {marshalled_type: self.__marshal_object(value)}
+                else:
+                    # Primitive number, bool, or str
+                    marshalled_item[key] = {marshalled_type: value}
+        except AttributeError:
+            # Base Case, item is a primitive.
             marshalled_type = self.DDB_PRIMITIVES_MAP[type(ddb_item)]
+
+            # Must convert python numbers to strings for DDB consumption
             marshalled_item[marshalled_type] = (
                 ddb_item if marshalled_type != 'N' else str(ddb_item)
             )
-            return marshalled_item
-
-        for key, value in ddb_item.items():
-            marshalled_type = self.DDB_PRIMITIVES_MAP[type(value)]
-            if marshalled_type in 'L':
-                marshalled_item[key] = {marshalled_type: []}
-                for list_item in value:
-                    marshalled_item[key][marshalled_type].append(
-                        self.__marshal_object(list_item)
-                    )
-            elif marshalled_type in 'M':
-                top_level_attr = top_key if top_key else key
-                marshalled_item[key] = {
-                    marshalled_type: self.__marshal_object(
-                        value, top_key=top_level_attr
-                    )
-                }
-            else:
-                marshalled_item[key] = { marshalled_type: value}
 
         return marshalled_item
