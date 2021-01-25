@@ -89,9 +89,6 @@ class MarshalItem:
         }
         return sorted_count
 
-    def __repr__(self):
-        return json.dumps(self.__marshalled_item, indent=4)
-
     def __marshal_object(self, ddb_item: dict, top_key: Optional[str] = None):
         """Convert dicitonary into DynamoDB marshalled item
 
