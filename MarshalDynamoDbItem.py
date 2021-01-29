@@ -11,7 +11,7 @@ class MarshalItem:
 
     >>> sample = MarshalItem({'item': {'dict': {'str': 's', 'int': 1, 'float': 1.2, 'bool': True}}})
     >>> sample.marshalled_item
-    {'item': {'M': {'dict': {'M': {'str': {'S': 's'}, 'int': {'N': 1}, 'float': {'N': 1.2}, 'bool': {'BOOL': True}}}}}}
+    {'item': {'M': {'dict': {'M': {'str': {'S': 's'}, 'int': {'N': '1'}, 'float': {'N': '1.2'}, 'bool': {'BOOL': True}}}}}}
 
     >>> MarshalItem({'1': {'2': {'3': {'4': {'throw': 'ex'}}}}})
     Traceback (most recent call last):
@@ -124,10 +124,12 @@ class MarshalItem:
                         marshalled_item[key][marshalled_type].append(self.__marshal_object(list_item))
                 elif marshalled_type == 'M':
                     # recursively marshal dicionary
-                    marshalled_item[key] = {marshalled_type: self.__marshal_object(value)}
+                    marshalled_item[key] = {marshalled_type: self.__marshal_object(value, top_key or key)}
                 else:
                     # Primitive number, bool, or str
-                    marshalled_item[key] = {marshalled_type: value}
+                    # Must convert python numbers to strings for DDB consumption
+                    item_value = value if marshalled_type != 'N' else str(value)
+                    marshalled_item[key] = {marshalled_type: item_value}
         except AttributeError:
             # Base Case, item is a primitive.
             marshalled_type = self.DDB_PRIMITIVES_MAP[type(ddb_item)]
